@@ -1,0 +1,11 @@
+SKU_ID,SKU_Name,SKU_Category,List_Price_Per_Hour_USD,Unit_Cost_Per_Hour_USD,Effective_Start_Date,Effective_End_Date,Target_GM_Pct,Is_Loss_Leader
+SKU1,Compute_Small,Compute,0.25,0.18,2021-01-01,,0.28,False
+SKU2,Compute_Medium,Compute,0.5,0.35,2021-01-01,,0.30000000000000004,False
+SKU3,Compute_Large,Compute,0.9,0.6,2021-01-01,,0.33333333333333337,False
+SKU4,Compute_Memory_Optimized,Compute,1.1,0.75,2021-01-01,,0.31818181818181823,False
+SKU5,Advanced_Compute,Advanced,2.0,1.1,2021-01-01,,0.44999999999999996,True
+SKU6,Standard_Storage,Storage,0.05,0.01,2021-01-01,,0.8,False
+SKU7,Premium_Storage,Storage,0.08,0.02,2021-01-01,,0.75,False
+SKU8,Data_Egress,Network,0.12,0.05,2021-01-01,,0.5833333333333333,False
+SKU9,Managed_Analytics,Service,3.0,0.4,2021-01-01,,0.8666666666666667,False
+SKU10,Monitoring_Addon,Service,0.75,0.2,2021-01-01,,0.7333333333333334,False
