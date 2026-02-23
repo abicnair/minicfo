@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name   TEXT,
   gcp_config  JSONB DEFAULT '{}'::jsonb,
+  credits     INTEGER DEFAULT 100,
   created_at  TIMESTAMPTZ DEFAULT now(),
   updated_at  TIMESTAMPTZ DEFAULT now()
 );

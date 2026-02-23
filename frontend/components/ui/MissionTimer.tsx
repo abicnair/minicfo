@@ -5,40 +5,64 @@ import { Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface MissionTimerProps {
-    initialMinutes?: number;
-    initialDays?: number;
+    kickoffAt?: string | null;
     className?: string;
     onTimeExpire?: () => void;
 }
 
-export function MissionTimer({ initialMinutes = 30, initialDays = 0, className, onTimeExpire }: MissionTimerProps) {
-    const [timeLeft, setTimeLeft] = useState((initialDays * 24 * 60 * 60) + (initialMinutes * 60));
+export function MissionTimer({ kickoffAt, className, onTimeExpire }: MissionTimerProps) {
+    const [timeLeft, setTimeLeft] = useState<number | null>(null);
     const [isWarning, setIsWarning] = useState(false);
 
     useEffect(() => {
-        if (timeLeft <= 0) {
-            onTimeExpire?.();
+        if (!kickoffAt) {
+            setTimeLeft(null);
             return;
         }
 
-        const timer = setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
+        const kickoffDate = new Date(kickoffAt);
+        const expiryDate = new Date(kickoffDate.getTime() + (30 * 24 * 60 * 60 * 1000));
+
+        const calculateTimeLeft = () => {
+            const now = new Date();
+            const difference = expiryDate.getTime() - now.getTime();
+
+            if (difference <= 0) {
+                setTimeLeft(0);
+                onTimeExpire?.();
+                return;
+            }
+
+            setTimeLeft(Math.floor(difference / 1000));
+        };
+
+        // Initial calculation
+        calculateTimeLeft();
+
+        const timer = setInterval(calculateTimeLeft, 1000);
 
         return () => clearInterval(timer);
-    }, [timeLeft, onTimeExpire]);
+    }, [kickoffAt, onTimeExpire]);
 
     useEffect(() => {
-        if (timeLeft < 300 && initialDays === 0) { // Less than 5 minutes, only warn if no days involved
+        if (timeLeft !== null && timeLeft < 86400) { // Less than 1 day
             setIsWarning(true);
+        } else {
+            setIsWarning(false);
         }
-    }, [timeLeft, initialDays]);
+    }, [timeLeft]);
+
+    if (timeLeft === null) {
+        return (
+            <div className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-full border font-mono font-medium bg-slate-100 text-slate-500 border-slate-200",
+                className
+            )}>
+                <Clock className="w-4 h-4" />
+                <span>Waiting for Kickoff</span>
+            </div>
+        );
+    }
 
     const days = Math.floor(timeLeft / (24 * 60 * 60));
     const hours = Math.floor((timeLeft % (24 * 60 * 60)) / (60 * 60));

@@ -4,12 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { Database, ArrowRight, Lock, Unlock, AlertCircle, Eye } from 'lucide-react';
+import { Database, ArrowRight, Lock, Unlock, AlertCircle, Eye, Download, CloudUpload, CheckCircle2, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { MissionTimer } from '@/components/ui/MissionTimer';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 
 interface DatasetColumn {
     name: string;
@@ -26,24 +27,31 @@ interface Dataset {
     column_json: DatasetColumn[];
 }
 
-export default function DataRoomPage() {
-    const params = useParams();
-    const missionId = params.id as string;
+export default function DataRoomPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id: missionId } = React.use(params);
+    const { userMissions, unlockDataset, syncMissionProgress, loading: authLoading, markDatasetSynced, profile } = useAuth();
+    const missionProgress = userMissions.find(m => m.mission_id === missionId);
 
     const [datasets, setDatasets] = useState<Dataset[]>([]);
     const [loading, setLoading] = useState(true);
-    const [credits, setCredits] = useState(100);
-    const [unlockedDatasets, setUnlockedDatasets] = useState<string[]>([]);
     const [selectedDataset, setSelectedDataset] = useState<string | null>(null);
+    const [isDownloading, setIsDownloading] = useState<string | null>(null);
+    const [isSyncing, setIsSyncing] = useState<string | null>(null);
+    const [syncSuccess, setSyncSuccess] = useState<string | null>(null);
+
+    const credits = missionProgress?.credits ?? 0;
+    const unlockedDatasets = missionProgress?.unlocked_datasets ?? [];
+    const syncedDatasets = missionProgress?.synced_datasets ?? [];
+    const gcpConfig = profile?.gcp_config;
 
     useEffect(() => {
         const fetchDatasets = async () => {
             try {
                 // Fetch datasets for this mission
-                // In this simplified version, we fetch all datasets (since they're usually small in number)
                 const { data, error } = await supabase
                     .from('datasets')
                     .select('id, name, description, row_count, unlock_cost, column_json')
+                    .eq('mission_id', missionId)
                     .order('sort_order', { ascending: true });
 
                 if (error) throw error;
@@ -63,11 +71,77 @@ export default function DataRoomPage() {
         fetchDatasets();
     }, []);
 
-    const handleUnlock = (datasetId: string, cost: number) => {
+    // Fallback: Kickoff mission if we land here and it hasn't started
+    useEffect(() => {
+        if (!loading && !authLoading && missionId && !missionProgress?.kickoff_at) {
+            console.log('DataRoom: Mission not kicked off, starting now...');
+            syncMissionProgress(missionId, true);
+        }
+    }, [loading, authLoading, missionId, missionProgress, syncMissionProgress]);
+
+    const handleUnlock = async (datasetId: string, cost: number) => {
         if (credits >= cost) {
-            setCredits(c => c - cost);
-            setUnlockedDatasets(prev => [...prev, datasetId]);
-            setSelectedDataset(datasetId);
+            await unlockDataset(missionId, datasetId, cost);
+        }
+    };
+
+    const handleDownload = async (datasetId: string) => {
+        setIsDownloading(datasetId);
+        try {
+            const response = await fetch('/api/download-dataset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ missionId, datasetId }),
+            });
+
+            if (!response.ok) throw new Error('Download failed');
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+
+            // Get filename from response header or default
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let fileName = 'dataset.csv';
+            if (contentDisposition) {
+                const match = contentDisposition.match(/filename="(.+)"/);
+                if (match) fileName = match[1];
+            }
+
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (err) {
+            console.error('Download error:', err);
+        } finally {
+            setIsDownloading(null);
+        }
+    };
+
+    const handleSync = async (datasetId: string) => {
+        setIsSyncing(datasetId);
+        setSyncSuccess(null);
+        try {
+            const response = await fetch('/api/sync-bigquery', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tableId: datasetId }), // Dataset ID matches table mapping
+            });
+
+            if (!response.ok) throw new Error('Sync failed');
+
+            // Persist the sync state in Supabase
+            await markDatasetSynced(missionId, datasetId);
+
+            setSyncSuccess(datasetId);
+            setTimeout(() => setSyncSuccess(null), 3000);
+        } catch (err) {
+            console.error('Sync error:', err);
+        } finally {
+            setIsSyncing(null);
         }
     };
 
@@ -85,14 +159,35 @@ export default function DataRoomPage() {
     return (
         <div className="flex flex-col h-full bg-slate-50 overflow-y-auto">
             {/* Header with Game Stats */}
-            <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8 sticky top-0 z-10">
-                <div className="flex items-center gap-2 font-semibold text-slate-700">
-                    <Database className="h-5 w-5 text-indigo-600" />
-                    <span>Mission Data Room</span>
-                </div>
+            <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8 shrink-0">
                 <div className="flex items-center gap-6">
-                    <MissionTimer initialDays={30} initialMinutes={0} />
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-full font-medium">
+                    <div className="flex items-center gap-2 font-semibold text-slate-700">
+                        <Database className="h-5 w-5 text-indigo-600" />
+                        <span>Mission Data Room</span>
+                    </div>
+
+                    <div className="h-6 w-px bg-slate-200" />
+
+                    <Link href={`/mission/${missionId}/workspace`}>
+                        <Button
+                            disabled={unlockedDatasets.length === 0}
+                            size="sm"
+                            className="gap-2 shadow-sm"
+                        >
+                            Enter Workbench <ArrowRight className="h-4 w-4" />
+                        </Button>
+                    </Link>
+
+                    {unlockedDatasets.length === 0 && (
+                        <span className="text-xs text-amber-600 flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" /> Unlock data to proceed
+                        </span>
+                    )}
+                </div>
+
+                <div className="flex items-center gap-6">
+                    <MissionTimer kickoffAt={missionProgress?.kickoff_at} />
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-full font-medium text-sm">
                         <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                         Credits: {credits}
                     </div>
@@ -152,19 +247,6 @@ export default function DataRoomPage() {
                         })}
                     </div>
 
-                    {/* Action to proceed */}
-                    <div className="pt-6 border-t border-slate-200">
-                        <Link href={`/mission/${missionId}/workspace`}>
-                            <Button disabled={unlockedDatasets.length === 0} size="lg" className="w-full gap-2 shadow-lg shadow-indigo-500/20">
-                                Enter Workbench <ArrowRight className="h-4 w-4" />
-                            </Button>
-                        </Link>
-                        {unlockedDatasets.length === 0 && (
-                            <p className="text-center text-xs text-amber-600 mt-2 flex items-center justify-center gap-1">
-                                <AlertCircle className="h-3 w-3" /> Unlock at least one dataset to proceed
-                            </p>
-                        )}
-                    </div>
                 </div>
 
                 {/* Right Column: Inspector Panel */}
@@ -179,12 +261,59 @@ export default function DataRoomPage() {
                                     <div className="flex flex-col h-full">
                                         <CardHeader className="bg-white border-b border-slate-100">
                                             <div className="flex items-start justify-between">
-                                                <div>
+                                                <div className="space-y-1">
                                                     <CardTitle className="text-xl flex items-center gap-2">
                                                         <Database className="h-5 w-5 text-indigo-600" />
                                                         {dataset.name}
                                                     </CardTitle>
-                                                    <p className="text-slate-500 mt-1">{dataset.description}</p>
+                                                    <p className="text-slate-500">{dataset.description}</p>
+
+                                                    {isUnlocked && (
+                                                        <div className="flex items-center gap-2 mt-3">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                className="h-8 gap-2 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                                                                onClick={() => handleDownload(dataset.id)}
+                                                                disabled={isDownloading === dataset.id}
+                                                            >
+                                                                {isDownloading === dataset.id ? (
+                                                                    <div className="h-3 w-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                                                                ) : <Download className="h-3 w-3" />}
+                                                                Download CSV
+                                                            </Button>
+                                                            <div className="flex items-center gap-2">
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    className={cn(
+                                                                        "h-8 gap-2 text-xs border-amber-200 text-amber-700 hover:bg-amber-50",
+                                                                        (syncSuccess === dataset.id || syncedDatasets.includes(dataset.id)) && "bg-green-50 text-green-700 border-green-200"
+                                                                    )}
+                                                                    onClick={() => handleSync(dataset.id)}
+                                                                    disabled={isSyncing === dataset.id}
+                                                                >
+                                                                    {isSyncing === dataset.id ? (
+                                                                        <div className="h-3 w-3 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                                                                    ) : (syncSuccess === dataset.id || syncedDatasets.includes(dataset.id)) ? (
+                                                                        <CheckCircle2 className="h-3 w-3" />
+                                                                    ) : <CloudUpload className="h-3 w-3" />}
+                                                                    {(syncSuccess === dataset.id || syncedDatasets.includes(dataset.id)) ? 'Synced' : 'Load to BigQuery'}
+                                                                </Button>
+
+                                                                {(syncSuccess === dataset.id || syncedDatasets.includes(dataset.id)) && gcpConfig?.projectId && (
+                                                                    <a
+                                                                        href={`https://console.cloud.google.com/bigquery?p=${gcpConfig.projectId}&d=nimbus_edge&t=${dataset.id}&page=table`}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="text-[10px] text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-medium bg-white px-2 py-1 rounded border border-indigo-100 hover:border-indigo-300 transition-colors"
+                                                                    >
+                                                                        View in BQ <ExternalLink className="h-3 w-3" />
+                                                                    </a>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 {!isUnlocked && (
                                                     <Button

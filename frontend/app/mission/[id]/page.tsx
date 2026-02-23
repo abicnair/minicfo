@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -28,9 +29,11 @@ interface DatasetLabel {
     intel_label: string;
 }
 
-export default function MissionBriefingPage() {
-    const params = useParams();
-    const missionId = params.id as string;
+export default function MissionBriefingPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id: missionId } = React.use(params);
+    const router = useRouter();
+    const { syncMissionProgress } = useAuth();
+    const [isStarting, setIsStarting] = useState(false);
 
     const [mission, setMission] = useState<Mission | null>(null);
     const [objectives, setObjectives] = useState<Objective[]>([]);
@@ -40,12 +43,11 @@ export default function MissionBriefingPage() {
     useEffect(() => {
         const fetchMissionData = async () => {
             try {
-                // Fetch Mission (for now we simplify and just get the first mission or by title if we had it, 
-                // but since the seed only creates one, we'll fetch the first one)
+                // Fetch Mission by ID
                 const { data: missionData, error: missionError } = await supabase
                     .from('missions')
                     .select('*')
-                    .limit(1)
+                    .eq('id', missionId)
                     .single();
 
                 if (missionError) throw missionError;
@@ -185,11 +187,23 @@ export default function MissionBriefingPage() {
 
                 {/* Action Bar */}
                 <div className="flex justify-end pt-4">
-                    <Link href={`/mission/${missionId}/data-room`}>
-                        <Button size="lg" className="gap-2 shadow-xl shadow-indigo-500/20">
-                            Inspect Data <ArrowRight className="h-4 w-4" />
-                        </Button>
-                    </Link>
+                    <Button
+                        size="lg"
+                        className="gap-2 shadow-xl shadow-indigo-500/20"
+                        disabled={isStarting}
+                        onClick={async () => {
+                            setIsStarting(true);
+                            try {
+                                await syncMissionProgress(missionId, true);
+                                router.push(`/mission/${missionId}/data-room`);
+                            } catch (error) {
+                                console.error('Failed to start mission:', error);
+                                setIsStarting(false);
+                            }
+                        }}
+                    >
+                        {isStarting ? 'Starting...' : 'Inspect Data'} <ArrowRight className="h-4 w-4" />
+                    </Button>
                 </div>
             </div>
         </div>

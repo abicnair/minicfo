@@ -20,7 +20,6 @@ export default function LoginPage() {
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         console.log('--- LOGIN SUBMITTED ---');
-        window.alert('Login button clicked for: ' + email);
         setLoading(true);
         setError(null);
 
@@ -28,7 +27,6 @@ export default function LoginPage() {
             console.log('Attempting login for:', email);
             if (!supabase) {
                 console.error('Supabase client is not initialized!');
-                window.alert('CRITICAL: Supabase client missing');
             }
             const { data, error } = await supabase.auth.signInWithPassword({
                 email,

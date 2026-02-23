@@ -54,15 +54,20 @@ export async function POST(req: NextRequest) {
             }, { status: 500 });
         }
 
-        const auth = new google.auth.JWT({
-            email: config.serviceAccountJson.client_email,
-            key: config.serviceAccountJson.private_key,
-            scopes: ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-        });
+        const auth = new google.auth.JWT(
+            config.serviceAccountJson.client_email,
+            undefined,
+            config.serviceAccountJson.private_key,
+            ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.file']
+        );
+
+        console.log('Export API: Authenticating with service account:', config.serviceAccountJson.client_email);
 
         const sheets = google.sheets({ version: 'v4', auth });
+        const drive = google.drive({ version: 'v3', auth });
 
         // 1. Create a new Spreadsheet
+        console.log('Export API: Creating spreadsheet...');
         const spreadsheet = await sheets.spreadsheets.create({
             requestBody: {
                 properties: {
@@ -72,8 +77,10 @@ export async function POST(req: NextRequest) {
         });
 
         const spreadsheetId = spreadsheet.data.spreadsheetId;
+        if (!spreadsheetId) throw new Error('Failed to create spreadsheet');
 
         // 2. Format data for Sheets (Headers + Rows)
+        console.log('Export API: Formatting data for spreadsheetId:', spreadsheetId);
         const headers = Object.keys(data[0]);
         const values = [
             headers,
@@ -81,17 +88,44 @@ export async function POST(req: NextRequest) {
         ];
 
         // 3. Update the sheet with values
+        console.log('Export API: Writing data to Sheet1...');
         await sheets.spreadsheets.values.update({
-            spreadsheetId: spreadsheetId!,
+            spreadsheetId,
             range: 'Sheet1!A1',
             valueInputOption: 'RAW',
             requestBody: { values },
         });
 
-        // 4. (Optional) Make it publicly viewable if needed, or share with a specific user
-        // For this demo, we'll return the URL. User may need to give service account access or we use a public template.
+        // 4. Share with the specific user who requested it
+        const userEmail = session.user.email;
+        console.log('Export API: Attempting to share with user email:', userEmail);
+        if (userEmail) {
+            try {
+                await drive.permissions.create({
+                    fileId: spreadsheetId,
+                    requestBody: {
+                        type: 'user',
+                        role: 'writer',
+                        emailAddress: userEmail,
+                    },
+                });
+                console.log('Export API: Successfully shared with user email.');
+            } catch (shareError: any) {
+                console.warn('Export API: Failed to share with user email, trying public fallback:', shareError.message);
+                // Fallback: make it readable for anyone with the link
+                await drive.permissions.create({
+                    fileId: spreadsheetId,
+                    requestBody: {
+                        type: 'anyone',
+                        role: 'reader',
+                    },
+                });
+                console.log('Export API: Successfully set public reader permission.');
+            }
+        }
 
         return NextResponse.json({
+            success: true,
             spreadsheetId,
             spreadsheetUrl: `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`
         });

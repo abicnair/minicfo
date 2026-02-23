@@ -6,10 +6,16 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { ExternalLink, CheckCircle, ChevronRight, Key, Database, RefreshCw, Terminal, Copy } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import { AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-export default function GCPSetup() {
+interface GCPSetupProps {
+    missionId?: string;
+}
+
+export default function GCPSetup({ missionId }: GCPSetupProps) {
+    const { syncMissionProgress } = useAuth();
     const [step, setStep] = useState(1);
     const [projectId, setProjectId] = useState('');
     const [serviceAccountJson, setServiceAccountJson] = useState('');
@@ -29,6 +35,9 @@ export default function GCPSetup() {
             const data = await response.json();
             if (data.success) {
                 // Save to Supabase Profile
+                const { data: userData } = await supabase.auth.getUser();
+                if (!userData.user) throw new Error('No authenticated user');
+
                 const { error: updateError } = await supabase
                     .from('profiles')
                     .update({
@@ -37,9 +46,25 @@ export default function GCPSetup() {
                             serviceAccountJson: JSON.parse(serviceAccountJson)
                         }
                     })
-                    .eq('id', (await supabase.auth.getUser()).data.user?.id);
+                    .eq('id', userData.user.id);
 
                 if (updateError) throw updateError;
+
+                // Kickoff Mission
+                let activeMissionId = missionId;
+                if (!activeMissionId) {
+                    // Try to find the first mission
+                    const { data: firstMission } = await supabase
+                        .from('missions')
+                        .select('id')
+                        .limit(1)
+                        .single();
+                    activeMissionId = firstMission?.id;
+                }
+
+                if (activeMissionId) {
+                    await syncMissionProgress(activeMissionId, true);
+                }
 
                 setStatus('success');
             } else {
@@ -118,7 +143,7 @@ export default function GCPSetup() {
                                     <Label htmlFor="projectId" className="text-slate-700">Project ID</Label>
                                     <Input
                                         id="projectId"
-                                        placeholder="e.g. minicfo-analytics-4029"
+                                        placeholder="e.g. cfo-ops-analytics-4029"
                                         value={projectId}
                                         onChange={(e) => setProjectId(e.target.value)}
                                         className="font-mono text-sm"
@@ -162,7 +187,7 @@ export default function GCPSetup() {
                                 <ol className="list-decimal list-inside space-y-3">
                                     <li>Navigate to <strong>IAM & Admin &gt; Service Accounts</strong>.</li>
                                     <li>Click <strong>+ Create Service Account</strong>.</li>
-                                    <li>Enter a name like <code>minicfo-analyst</code>.</li>
+                                    <li>Enter a name like <code>cfo-ops-analyst</code>.</li>
                                     <li>Grant this account the following roles:
                                         <div className="mt-2 flex flex-wrap gap-2">
                                             <span className="px-2 py-1 bg-slate-100 border border-slate-200 rounded text-xs font-mono text-slate-700">BigQuery Admin</span>

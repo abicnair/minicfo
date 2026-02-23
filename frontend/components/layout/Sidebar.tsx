@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, GraduationCap, Settings, User } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, Settings, User, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 
 const tools = [
     {
@@ -26,21 +27,24 @@ const tools = [
 
 export function Sidebar() {
     const pathname = usePathname();
+    const { profile, user, signOut } = useAuth();
+
+    const displayName = profile?.full_name || user?.email?.split('@')[0] || 'User';
 
     return (
-        <div className="flex h-screen w-64 flex-col border-r border-slate-200 bg-white">
-            <div className="flex h-16 items-center border-b border-slate-200 px-6">
-                <Link href="/dashboard" className="flex items-center gap-3 font-bold text-indigo-600 hover:opacity-80 transition-opacity">
-                    <div className="relative h-8 w-8 overflow-hidden rounded-lg shadow-sm">
+        <div className="flex h-screen w-52 flex-col border-r border-slate-200 bg-white">
+            <div className="flex h-16 items-center border-b border-slate-200 px-4">
+                <Link href="/dashboard" className="flex items-center gap-2 font-bold text-indigo-600 hover:opacity-80 transition-opacity">
+                    <div className="relative h-7 w-7 overflow-hidden rounded-lg shadow-sm">
                         <Image
                             src="/logo.png"
-                            alt="MiniCFO Logo"
+                            alt="CFO Ops Logo"
                             fill
                             unoptimized
                             className="object-cover"
                         />
                     </div>
-                    <span className="text-xl tracking-tight">MiniCFO</span>
+                    <span className="text-lg tracking-tight">CFO Ops</span>
                 </Link>
             </div>
 
@@ -65,15 +69,26 @@ export function Sidebar() {
                 })}
             </nav>
 
-            <div className="border-t border-slate-200 p-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100">
-                        <User className="h-5 w-5 text-slate-500" />
+            <div className="border-t border-slate-200 p-3">
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100">
+                            <User className="h-4 w-4 text-slate-500" />
+                        </div>
+                        <div className="text-xs">
+                            <p className="font-medium text-slate-700 truncate max-w-[90px]">
+                                {displayName}
+                            </p>
+                            <p className="text-[10px] text-slate-500">Analyst</p>
+                        </div>
                     </div>
-                    <div className="text-sm">
-                        <p className="font-medium text-slate-700">Analyst</p>
-                        <p className="text-xs text-slate-500">Level 1</p>
-                    </div>
+                    <button
+                        onClick={signOut}
+                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Log out"
+                    >
+                        <LogOut className="h-4 w-4" />
+                    </button>
                 </div>
             </div>
         </div>
