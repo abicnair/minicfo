@@ -231,20 +231,14 @@ export default function SettingsPage() {
                                             </div>
                                         </div>
 
-                                        <Button
-                                            variant="outline"
-                                            className="w-full h-16 text-lg font-bold border-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-400 transition-all rounded-2xl shadow-sm bg-white hover:shadow-md"
-                                            asChild
+                                        <a
+                                            href="https://aistudio.google.com/app/plan_management"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="w-full h-16 text-lg font-bold border-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-400 transition-all rounded-2xl shadow-sm bg-white hover:shadow-md flex items-center justify-center gap-3"
                                         >
-                                            <a
-                                                href="https://aistudio.google.com/app/plan_management"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center justify-center gap-3"
-                                            >
-                                                Complete Billing Setup in AI Studio <ArrowRight className="h-6 w-6 animate-pulse" />
-                                            </a>
-                                        </Button>
+                                            Complete Billing Setup in AI Studio <ArrowRight className="h-6 w-6 animate-pulse" />
+                                        </a>
                                     </div>
                                 </CardContent>
                             </Card>
