@@ -19,7 +19,7 @@ async function checkMissions() {
         console.log('Missions found:', data?.length || 0);
         console.log('Total count:', count);
         if (data && data.length > 0) {
-            console.log('Titles:', data.map(m => m.title).join(', '));
+            console.log('Titles:', data.map((m: any) => m.title).join(', '));
         }
     }
 }
