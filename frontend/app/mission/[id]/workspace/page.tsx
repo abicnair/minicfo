@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Database, Play, MessageSquare, Table, FileSpreadsheet, Send, CornerDownLeft, CloudUpload, AlertCircle, CheckCircle2, Loader2, ExternalLink, RefreshCw, Copy, Check } from 'lucide-react';
+import { Database, Play, MessageSquare, Table, Send, CloudUpload, AlertCircle, CheckCircle2, Loader2, ExternalLink, RefreshCw, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import { MissionTimer } from '@/components/ui/MissionTimer';
@@ -54,7 +54,7 @@ export default function SimulationPage({ params }: { params: Promise<{ id: strin
     const missionProgress = userMissions.find(m => m.mission_id === missionId);
     const syncedDatasets = missionProgress?.synced_datasets ?? [];
 
-    const [activeTab, setActiveTab] = useState<'sql' | 'sheets'>('sql');
+    const [activeTab, setActiveTab] = useState<'sql'>('sql');
     const [missionTitle, setMissionTitle] = useState('Loading...');
     const [unlockedDatasets, setUnlockedDatasets] = useState<any[]>([]);
     const [expandedTables, setExpandedTables] = useState<Record<string, boolean>>({});
@@ -67,8 +67,7 @@ LIMIT 10`);
     const [results, setResults] = useState<any[]>([]);
     const [executing, setExecuting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [sheetUrl, setSheetUrl] = useState<string | null>(null);
-    const [exporting, setExporting] = useState(false);
+
     const [aiInput, setAiInput] = useState('');
     const [messages, setMessages] = useState<Array<{ role: 'ai' | 'user', content: string }>>([
         { role: 'ai', content: "Hello! I'm your AI Junior Analyst. I have access to your unlocked mission data. How can I help you today?" }
@@ -275,33 +274,6 @@ LIMIT 10`);
         });
     };
 
-    const exportToSheets = async () => {
-        if (results.length === 0) return;
-        setExporting(true);
-        setError(null);
-        try {
-            const response = await fetch('/api/export-sheets', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    data: results,
-                    title: `Export: ${missionTitle}`
-                }),
-            });
-
-            const data = await response.json();
-            if (data.error) {
-                setError(data.error);
-            } else {
-                setSheetUrl(data.spreadsheetUrl);
-                setActiveTab('sheets');
-            }
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setExporting(false);
-        }
-    };
 
     return (
         <div className="flex h-full flex-col">
@@ -319,11 +291,7 @@ LIMIT 10`);
                     <Button size="sm" variant="outline" onClick={runQuery} disabled={executing}>
                         {executing ? 'Running...' : <><Play className="h-3 w-3 mr-2" /> Run SQL</>}
                     </Button>
-                    {results.length > 0 && (
-                        <Button size="sm" variant="outline" className="bg-green-600 hover:bg-green-700 text-white border-green-700" onClick={exportToSheets} disabled={exporting}>
-                            {exporting ? 'Exporting...' : <><FileSpreadsheet className="h-3 w-3 mr-2" /> Export to Sheets</>}
-                        </Button>
-                    )}
+
                     <Button size="sm">Submit Recommendations</Button>
                 </div>
             </header>
@@ -498,119 +466,93 @@ LIMIT 10`);
                                 <Database className="h-4 w-4" /> SQL Editor
                             </div>
                         </button>
-                        <button
-                            onClick={() => setActiveTab('sheets')}
-                            className={cn("px-4 py-2 text-sm font-medium border-b-2", activeTab === 'sheets' ? "border-green-600 text-green-700" : "border-transparent text-slate-600 hover:text-slate-800")}
-                        >
-                            <div className="flex items-center gap-2">
-                                <FileSpreadsheet className="h-4 w-4" /> Google Sheets
-                            </div>
-                        </button>
+
                     </div>
 
                     {/* Content Area */}
                     <div className="flex-1 p-4 bg-slate-50/50 flex flex-col gap-4 overflow-hidden">
-                        {activeTab === 'sql' ? (
-                            <>
-                                <div className="h-1/2 rounded-lg border border-slate-300 bg-white shadow-sm overflow-hidden flex flex-col relative group">
-                                    <textarea
-                                        value={sqlQuery}
-                                        onChange={(e) => setSqlQuery(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-                                                runQuery();
-                                            }
-                                        }}
-                                        className="flex-1 w-full p-4 font-mono text-sm resize-none focus:outline-none"
-                                        spellCheck={false}
-                                        placeholder="Enter your SQL query here..."
-                                    />
-                                    <div className="absolute bottom-4 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                        <div className="flex items-center gap-1 text-[10px] text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded border border-slate-200">
-                                            <span>Cmd</span>
-                                            <span>+</span>
-                                            <span>Enter</span>
-                                        </div>
+                        <>
+                            <div className="h-1/2 rounded-lg border border-slate-300 bg-white shadow-sm overflow-hidden flex flex-col relative group">
+                                <textarea
+                                    value={sqlQuery}
+                                    onChange={(e) => setSqlQuery(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                                            runQuery();
+                                        }
+                                    }}
+                                    className="flex-1 w-full p-4 font-mono text-sm resize-none focus:outline-none"
+                                    spellCheck={false}
+                                    placeholder="Enter your SQL query here..."
+                                />
+                                <div className="absolute bottom-4 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                    <div className="flex items-center gap-1 text-[10px] text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded border border-slate-200">
+                                        <span>Cmd</span>
+                                        <span>+</span>
+                                        <span>Enter</span>
+                                    </div>
+                                    <Button
+                                        size="sm"
+                                        onClick={runQuery}
+                                        disabled={executing}
+                                        className="shadow-lg h-9 pointer-events-auto"
+                                    >
+                                        {executing ? 'Running...' : <><Play className="h-3 w-3 mr-2" /> Run Query</>}
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="h-1/2 rounded-lg border border-slate-200 bg-white shadow-sm flex flex-col overflow-auto relative">
+                                {results.length > 0 && !error && (
+                                    <div className="sticky top-0 right-0 z-10 p-2 flex justify-end pointer-events-none">
                                         <Button
                                             size="sm"
-                                            onClick={runQuery}
-                                            disabled={executing}
-                                            className="shadow-lg h-9 pointer-events-auto"
+                                            variant="outline"
+                                            onClick={copyToClipboard}
+                                            className="bg-white/80 backdrop-blur-sm shadow-sm h-8 pointer-events-auto"
+                                            title="Copy as TSV (Spreadsheet friendly)"
                                         >
-                                            {executing ? 'Running...' : <><Play className="h-3 w-3 mr-2" /> Run Query</>}
+                                            {copied ? (
+                                                <><Check className="h-3 w-3 mr-2 text-green-600" /> Copied!</>
+                                            ) : (
+                                                <><Copy className="h-3 w-3 mr-2 text-slate-500" /> Copy Results</>
+                                            )}
                                         </Button>
                                     </div>
-                                </div>
-                                <div className="h-1/2 rounded-lg border border-slate-200 bg-white shadow-sm flex flex-col overflow-auto relative">
-                                    {results.length > 0 && !error && (
-                                        <div className="sticky top-0 right-0 z-10 p-2 flex justify-end pointer-events-none">
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={copyToClipboard}
-                                                className="bg-white/80 backdrop-blur-sm shadow-sm h-8 pointer-events-auto"
-                                                title="Copy as TSV (Spreadsheet friendly)"
-                                            >
-                                                {copied ? (
-                                                    <><Check className="h-3 w-3 mr-2 text-green-600" /> Copied!</>
-                                                ) : (
-                                                    <><Copy className="h-3 w-3 mr-2 text-slate-500" /> Copy Results</>
-                                                )}
-                                            </Button>
-                                        </div>
-                                    )}
-                                    {error ? (
-                                        <div className="p-4 text-red-600 text-sm font-mono whitespace-pre-wrap flex items-start gap-2">
-                                            <span className="shrink-0 mt-1">❌</span>
-                                            {error}
-                                        </div>
-                                    ) : results.length > 0 ? (
-                                        <table className="w-full text-left text-xs border-collapse">
-                                            <thead className="bg-slate-50 sticky top-0 border-b border-slate-200">
-                                                <tr>
-                                                    {Object.keys(results[0]).map(key => (
-                                                        <th key={key} className="px-4 py-2 font-semibold text-slate-600 uppercase tracking-wider">{key}</th>
+                                )}
+                                {error ? (
+                                    <div className="p-4 text-red-600 text-sm font-mono whitespace-pre-wrap flex items-start gap-2">
+                                        <span className="shrink-0 mt-1">❌</span>
+                                        {error}
+                                    </div>
+                                ) : results.length > 0 ? (
+                                    <table className="w-full text-left text-xs border-collapse">
+                                        <thead className="bg-slate-50 sticky top-0 border-b border-slate-200">
+                                            <tr>
+                                                {Object.keys(results[0]).map(key => (
+                                                    <th key={key} className="px-4 py-2 font-semibold text-slate-600 uppercase tracking-wider">{key}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {results.map((row, i) => (
+                                                <tr key={i} className="hover:bg-slate-50/50">
+                                                    {Object.values(row).map((val: any, j) => (
+                                                        <td key={j} className="px-4 py-2 text-slate-700">
+                                                            {typeof val === 'object' && val !== null ? JSON.stringify(val) : String(val)}
+                                                        </td>
                                                     ))}
                                                 </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {results.map((row, i) => (
-                                                    <tr key={i} className="hover:bg-slate-50/50">
-                                                        {Object.values(row).map((val: any, j) => (
-                                                            <td key={j} className="px-4 py-2 text-slate-700">
-                                                                {typeof val === 'object' && val !== null ? JSON.stringify(val) : String(val)}
-                                                            </td>
-                                                        ))}
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    ) : (
-                                        <div className="flex-1 flex items-center justify-center text-slate-400 text-sm italic">
-                                            {executing ? 'Executing query...' : 'Run a query to see results'}
-                                        </div>
-                                    )}
-                                </div>
-                            </>
-                        ) : (
-                            <div className="h-full rounded-lg border border-slate-200 bg-white shadow-sm flex items-center justify-center text-slate-400 overflow-hidden">
-                                {sheetUrl ? (
-                                    <iframe
-                                        className="w-full h-full border-none"
-                                        src={`${sheetUrl}?rm=demo`}
-                                        title="Google Sheets Export"
-                                    />
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 ) : (
-                                    <div className="flex flex-col items-center gap-3 p-8 text-center">
-                                        <FileSpreadsheet className="h-12 w-12 text-slate-200" />
-                                        <div>
-                                            <p className="font-medium text-slate-600 font-sans">No spreadsheet exported yet</p>
-                                            <p className="text-sm font-sans">Run a SQL query and click "Export to Sheets" to see it here.</p>
-                                        </div>
+                                    <div className="flex-1 flex items-center justify-center text-slate-400 text-sm italic">
+                                        {executing ? 'Executing query...' : 'Run a query to see results'}
                                     </div>
                                 )}
                             </div>
-                        )}
+                        </>
+
                     </div>
                 </section>
 
