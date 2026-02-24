@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BigQuery } from '@google-cloud/bigquery';
+import { BigQuery, Table } from '@google-cloud/bigquery';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
         // 2. List tables in the dataset
         const [tables] = await dataset.getTables();
 
-        const tableList = tables.map(table => ({
+        const tableList = tables.map((table: Table) => ({
             id: table.id,
             metadata: table.metadata, // Contains tableReference, creationTime, etc.
         }));

@@ -292,7 +292,9 @@ LIMIT 10`);
                         {executing ? 'Running...' : <><Play className="h-3 w-3 mr-2" /> Run SQL</>}
                     </Button>
 
-                    <Button size="sm">Submit Recommendations</Button>
+                    <Link href={`/mission/${missionId}/submit`}>
+                        <Button size="sm">Submit Recommendations</Button>
+                    </Link>
                 </div>
             </header>
 
