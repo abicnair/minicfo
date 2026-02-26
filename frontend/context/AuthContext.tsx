@@ -19,7 +19,6 @@ interface UserMission {
     kickoff_at: string | null;
     unlocked_datasets: string[];
     synced_datasets: string[];
-    credits: number;
 }
 
 interface AuthContextType {
@@ -30,7 +29,6 @@ interface AuthContextType {
     loading: boolean;
     signOut: () => Promise<void>;
     syncMissionProgress: (missionId: string, kickoff?: boolean) => Promise<UserMission | null>;
-    unlockDataset: (missionId: string, datasetId: string, cost: number) => Promise<boolean>;
     markDatasetSynced: (missionId: string, datasetId: string) => Promise<boolean>;
 }
 
@@ -170,7 +168,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             mission_id: missionId,
             unlocked_datasets: existing?.unlocked_datasets || [],
             synced_datasets: existing?.synced_datasets || [],
-            credits: existing?.credits ?? 100
         };
 
         if (kickoff) {
@@ -202,42 +199,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return data;
     };
 
-    const unlockDataset = async (missionId: string, datasetId: string, cost: number) => {
-        const missionProgress = userMissions.find(m => m.mission_id === missionId);
-        if (!user || !missionProgress || missionProgress.credits < cost) return false;
-
-        const currentUnlocked = missionProgress.unlocked_datasets || [];
-        if (currentUnlocked.includes(datasetId)) return true;
-
-        const newUnlocked = [...currentUnlocked, datasetId];
-        const newCredits = missionProgress.credits - cost;
-
-        try {
-            // Update user_missions with both the new dataset and the deducted credits
-            const { error: mError } = await supabase
-                .from('user_missions')
-                .update({
-                    unlocked_datasets: newUnlocked,
-                    credits: newCredits
-                })
-                .eq('user_id', user.id)
-                .eq('mission_id', missionId);
-
-            if (mError) throw mError;
-
-            // Update local state
-            setUserMissions(prev => prev.map(m =>
-                m.mission_id === missionId
-                    ? { ...m, unlocked_datasets: newUnlocked, credits: newCredits }
-                    : m
-            ));
-
-            return true;
-        } catch (err) {
-            console.error('Error unlocking dataset:', err);
-            return false;
-        }
-    };
 
     const markDatasetSynced = async (missionId: string, datasetId: string) => {
         const missionProgress = userMissions.find(m => m.mission_id === missionId);
@@ -302,7 +263,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             loading,
             signOut,
             syncMissionProgress,
-            unlockDataset,
             markDatasetSynced
         }}>
             {children}
