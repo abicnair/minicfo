@@ -138,14 +138,12 @@ LIMIT 10`);
                     .eq('mission_id', missionId);
                 if (dsError) throw dsError;
 
-                // Sync with unlocked status from missionProgress
-                const unlockedIds = missionProgress?.unlocked_datasets || [];
-                const filtered = (ds || []).filter(d => unlockedIds.includes(d.id));
-                setUnlockedDatasets(filtered);
+                // All datasets are available by default
+                setUnlockedDatasets(ds || []);
 
                 // Expand the first one by default if not already expanded
-                if (filtered.length > 0 && Object.keys(expandedTables).length === 0) {
-                    setExpandedTables({ [filtered[0].id]: true });
+                if ((ds || []).length > 0 && Object.keys(expandedTables).length === 0) {
+                    setExpandedTables({ [(ds || [])[0].id]: true });
                 }
             } catch (err) {
                 console.error('Error fetching workspace data:', err);
@@ -156,7 +154,7 @@ LIMIT 10`);
         };
 
         fetchMissionData();
-    }, [missionId, missionProgress?.unlocked_datasets]);
+    }, [missionId]);
 
     const toggleTable = (id: string) => {
         setExpandedTables(prev => ({ ...prev, [id]: !prev[id] }));
@@ -282,10 +280,6 @@ LIMIT 10`);
                 <div className="flex items-center gap-4">
                     <h1 className="text-lg font-semibold text-slate-800">{missionTitle}</h1>
                     <MissionTimer kickoffAt={missionProgress?.kickoff_at} />
-                    <div className="flex items-center gap-2 px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full font-medium text-xs">
-                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                        Credits: {missionProgress?.credits ?? 0}
-                    </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button size="sm" variant="outline" onClick={runQuery} disabled={executing}>
@@ -329,7 +323,7 @@ LIMIT 10`);
                             </div>
                         ) : unlockedDatasets.length === 0 ? (
                             <div className="p-4 text-xs text-slate-400 italic text-center">
-                                No datasets unlocked.
+                                No datasets available.
                             </div>
                         ) : (
                             <div className="space-y-4">
