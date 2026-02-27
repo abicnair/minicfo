@@ -241,7 +241,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const signOut = async () => {
         try {
             console.log('AuthProvider: Signing out...');
-            await supabase.auth.signOut();
+            // Add a timeout to prevent hanging if Supabase LockManager gets stuck
+            await Promise.race([
+                supabase.auth.signOut(),
+                new Promise(resolve => setTimeout(resolve, 2000))
+            ]);
         } catch (error: any) {
             if (error?.name === 'AbortError' || error?.message?.includes('aborted') || error?.code === '20') {
                 console.log('AuthProvider: Sign out request aborted (normal during navigation).');
@@ -249,6 +253,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 console.error('AuthProvider: Error signing out from Supabase:', error);
             }
         } finally {
+            // Force clear local storage just in case the lock manager timed out
+            try {
+                localStorage.removeItem('sb-mcugfbfezsqqyhezkzyz-auth-token');
+            } catch (e) {
+                // Ignore DOMException if not in a browser environment
+            }
             // Force full navigation to ensure cookies sync with middleware
             window.location.href = '/login';
         }
