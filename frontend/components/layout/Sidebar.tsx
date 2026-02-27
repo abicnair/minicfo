@@ -83,11 +83,16 @@ export function Sidebar() {
                         </div>
                     </div>
                     <button
-                        onClick={signOut}
-                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            console.log('Sidebar: Logout clicked');
+                            signOut();
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                         title="Log out"
+                        type="button"
                     >
-                        <LogOut className="h-4 w-4" />
+                        <LogOut className="h-4 w-4 pointer-events-none" />
                     </button>
                 </div>
             </div>

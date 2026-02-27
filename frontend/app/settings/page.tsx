@@ -33,8 +33,18 @@ export default function SettingsPage() {
                         <SettingsIcon className="h-5 w-5 text-indigo-600" /> User Settings
                     </h1>
                 </div>
-                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50 gap-2" onClick={signOut}>
-                    <LogOut className="h-4 w-4" /> Sign Out
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 gap-2 cursor-pointer"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        console.log('Settings: Logout clicked');
+                        signOut();
+                    }}
+                    type="button"
+                >
+                    <LogOut className="h-4 w-4 pointer-events-none" /> Sign Out
                 </Button>
             </header>
 
