@@ -54,6 +54,7 @@ export default function Dashboard() {
 
     useEffect(() => {
         let isMounted = true;
+        let timeoutId: NodeJS.Timeout;
 
         const fetchMissions = async () => {
             if (authLoading) return;
@@ -61,6 +62,16 @@ export default function Dashboard() {
             try {
                 setLoading(true);
                 setError(null);
+
+                // Safety timeout to prevent indefinite spinning
+                timeoutId = setTimeout(() => {
+                    if (isMounted) {
+                        console.warn('Dashboard: Loading timeout reached, forcing state to not loading');
+                        setLoading(false);
+                        setError('Loading timed out. Please try again.');
+                    }
+                }, 8000);
+
                 const { data, error } = await supabase
                     .from('missions')
                     .select('*');
@@ -82,8 +93,13 @@ export default function Dashboard() {
                 }));
 
                 setMissions(formattedMissions);
+                // Clear the timeout if we succeeded before 8 seconds
+                clearTimeout(timeoutId);
             } catch (err: any) {
                 if (!isMounted) return;
+
+                // Clear the timeout if we errored before 8 seconds
+                clearTimeout(timeoutId);
 
                 if (err.name === 'AbortError' || err.message?.includes('aborted') || err.code === '20') {
                     console.log('Dashboard: Fetch aborted. Setting retry state.');
@@ -101,18 +117,9 @@ export default function Dashboard() {
             fetchMissions();
         }
 
-        // Safety timeout to prevent indefinite spinning
-        const timeout = setTimeout(() => {
-            if (isMounted && loading) {
-                console.warn('Dashboard: Loading timeout reached, forcing state to not loading');
-                setLoading(false);
-                setError('Loading timed out. Please try again.');
-            }
-        }, 8000);
-
         return () => {
             isMounted = false;
-            clearTimeout(timeout);
+            clearTimeout(timeoutId);
         };
     }, [authLoading, user?.id, retryCount]);
 

@@ -6,16 +6,25 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Github, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { Github, Mail, Lock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function LoginPage() {
+function LoginContent() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const router = useRouter();
+
+    // Check for Supabase redirect errors in URL (e.g. expired email links)
+    const urlError = searchParams.get('error_description')
+        ? decodeURIComponent(searchParams.get('error_description')!.replace(/\+/g, ' '))
+        : null;
+
+    const [error, setError] = useState<string | null>(urlError);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -35,7 +44,14 @@ export default function LoginPage() {
 
             if (error) {
                 console.error('Login error details:', error);
-                setError(error.message);
+
+                // Enhance "Email not confirmed" error to explain enterprise scanner issues
+                if (error.message.toLowerCase().includes('email not confirmed')) {
+                    setError('Email not confirmed. If you already clicked the link, your company\'s email security scanner may have consumed it. Please reply to your invite email for a manual activation.');
+                } else {
+                    setError(error.message);
+                }
+
                 setLoading(false);
             } else {
                 console.log('Login successful, redirecting...');
@@ -134,5 +150,17 @@ export default function LoginPage() {
                 </CardContent>
             </Card>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+            </div>
+        }>
+            <LoginContent />
+        </Suspense>
     );
 }
