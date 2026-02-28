@@ -256,6 +256,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Force clear local storage just in case the lock manager timed out
             try {
                 localStorage.removeItem('sb-mcugfbfezsqqyhezkzyz-auth-token');
+
+                // Manually clear all Supabase related cookies so Next.js middleware doesn't bounce us back
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i];
+                    const eqPos = cookie.indexOf('=');
+                    const name = eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
+                    if (name.startsWith('sb-')) {
+                        document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+                    }
+                }
             } catch (e) {
                 // Ignore DOMException if not in a browser environment
             }
