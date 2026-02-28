@@ -12,11 +12,12 @@ const createClient = () => {
             // Supabase occasionally gets stuck trying to acquire a cross-tab lock.
             // When this happens even in single tabs, we must completely disable the lock.
             // Returning a resolved promise tells Supabase it instantly acquired the lock.
-            lock: async (name: string, acquire: () => Promise<void>) => {
+            lock: async (name: string, acquire: () => Promise<any>) => {
                 try {
-                    await acquire();
+                    return await acquire();
                 } catch (e) {
                     console.warn('Supabase lock bypassed due to timeout protection.', e);
+                    throw e;
                 }
             }
         }
