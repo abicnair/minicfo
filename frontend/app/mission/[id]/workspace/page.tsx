@@ -266,16 +266,14 @@ LIMIT 10`);
                                 <Database className="h-4 w-4 text-indigo-600" />
                                 <span>Data Room</span>
                             </div>
-                            {isGcpConfigured && (
-                                <button
-                                    onClick={fetchBqTables}
-                                    disabled={bqLoading}
-                                    className="p-1 hover:bg-slate-100 rounded transition-colors"
-                                    title="Refresh Tables"
-                                >
-                                    <RefreshCw className={cn("h-3 w-3 text-slate-400", bqLoading && "animate-spin")} />
-                                </button>
-                            )}
+                            <button
+                                onClick={fetchBqTables}
+                                disabled={bqLoading}
+                                className="p-1 hover:bg-slate-100 rounded transition-colors"
+                                title="Refresh Tables"
+                            >
+                                <RefreshCw className={cn("h-3 w-3 text-slate-400", bqLoading && "animate-spin")} />
+                            </button>
                         </div>
                     </div>
                     <div className="flex-1 overflow-y-auto p-2 space-y-1">
