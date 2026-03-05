@@ -32,23 +32,17 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('gcp_config')
-            .eq('id', session.user.id)
-            .single();
+        const projectId = process.env.NEXT_PUBLIC_GCP_PROJECT_ID;
 
-        const config = profile?.gcp_config as any;
-
-        if (!config?.projectId || !config?.serviceAccountJson) {
+        if (!projectId) {
             return NextResponse.json({
-                error: 'BigQuery not configured.'
-            }, { status: 400 });
+                error: 'Global BigQuery not configured.'
+            }, { status: 500 });
         }
 
+        // Uses GOOGLE_APPLICATION_CREDENTIALS automatically
         const bigquery = new BigQuery({
-            projectId: config.projectId,
-            credentials: config.serviceAccountJson,
+            projectId: projectId,
         });
 
         const DATASET_ID = 'nimbus_edge';

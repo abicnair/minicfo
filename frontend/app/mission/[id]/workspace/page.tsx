@@ -79,13 +79,8 @@ LIMIT 10`);
     const [loading, setLoading] = useState(true);
     const [bqTables, setBqTables] = useState<any[]>([]);
     const [bqLoading, setBqLoading] = useState(false);
-    const [syncingTable, setSyncingTable] = useState<string | null>(null);
-    const [syncSuccess, setSyncSuccess] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
     const scrollRef = React.useRef<HTMLDivElement>(null);
-    const gcpConfig = profile?.gcp_config;
-
-    const isGcpConfigured = !!(profile?.gcp_config?.projectId && profile?.gcp_config?.serviceAccountJson);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -94,7 +89,6 @@ LIMIT 10`);
     }, [messages, isThinking]);
 
     const fetchBqTables = async () => {
-        if (!isGcpConfigured) return;
         setBqLoading(true);
         try {
             const response = await fetch('/api/list-tables');
@@ -110,10 +104,8 @@ LIMIT 10`);
     };
 
     useEffect(() => {
-        if (isGcpConfigured) {
-            fetchBqTables();
-        }
-    }, [isGcpConfigured, syncedDatasets]);
+        fetchBqTables();
+    }, [syncedDatasets]);
 
     useEffect(() => {
         const fetchMissionData = async () => {
@@ -161,10 +153,6 @@ LIMIT 10`);
     };
 
     const runQuery = async () => {
-        if (!isGcpConfigured) {
-            setError("BigQuery is not configured. Please use the 'Connect BigQuery' setup first.");
-            return;
-        }
         setExecuting(true);
         setError(null);
         setResults([]);
@@ -193,32 +181,7 @@ LIMIT 10`);
         }
     };
 
-    const handleSync = async (tableId: string) => {
-        setSyncingTable(tableId);
-        setSyncSuccess(null);
-        try {
-            const response = await fetch('/api/sync-bigquery', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tableId }),
-            });
 
-            const data = await response.json();
-            if (data.success) {
-                // Persist state
-                await markDatasetSynced(missionId, tableId);
-                setSyncSuccess(tableId);
-                fetchBqTables(); // Refresh table list
-                setTimeout(() => setSyncSuccess(null), 3000);
-            } else {
-                setError(`Sync failed: ${data.error}`);
-            }
-        } catch (err: any) {
-            setError(`Sync error: ${err.message}`);
-        } finally {
-            setSyncingTable(null);
-        }
-    };
 
     const handleAiSubmit = async () => {
         if (!aiInput.trim() || isThinking) return;
@@ -327,22 +290,9 @@ LIMIT 10`);
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                {!isGcpConfigured && (
-                                    <div className="mx-2 p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
-                                        <div className="flex items-start gap-2 text-amber-800 text-[10px] font-medium leading-tight">
-                                            <AlertCircle className="h-3 w-3 shrink-0 mt-0.5 text-amber-500" />
-                                            <span>BigQuery is not connected. You won't be able to run SQL queries.</span>
-                                        </div>
-                                        <Link href="/settings">
-                                            <Button variant="outline" size="sm" className="w-full h-7 text-[10px] bg-white border-amber-200 text-amber-700 hover:bg-amber-100">
-                                                Connect GCP
-                                            </Button>
-                                        </Link>
-                                    </div>
-                                )}
+
                                 <div className="space-y-1 px-1">
                                     {unlockedDatasets.map(ds => {
-                                        const isSynced = bqTables.some(t => t.id === ds.id) || syncedDatasets.includes(ds.id);
 
                                         return (
                                             <div key={ds.id} className="space-y-0.5">
@@ -355,45 +305,22 @@ LIMIT 10`);
                                                         )}
                                                     >
                                                         <div className="flex items-center gap-2">
-                                                            <Table className={cn("h-3.5 w-3.5", isSynced ? "text-indigo-500" : "text-slate-400")} />
+                                                            <Table className="h-3.5 w-3.5 text-indigo-500" />
                                                             <span className="truncate">{ds.name}</span>
                                                         </div>
                                                         <span className="text-[10px] text-slate-400 font-mono">
                                                             {expandedTables[ds.id] ? '−' : '+'}
                                                         </span>
                                                     </button>
-                                                    {isGcpConfigured && (
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            className={cn(
-                                                                "h-8 w-8 p-0 shrink-0",
-                                                                (syncSuccess === ds.id || isSynced) ? "text-green-600" : "text-slate-400 hover:text-indigo-600"
-                                                            )}
-                                                            title={isSynced ? "Synced to BigQuery" : "Sync to BigQuery"}
-                                                            disabled={syncingTable === ds.id}
-                                                            onClick={() => handleSync(ds.id)}
-                                                        >
-                                                            {syncingTable === ds.id ? (
-                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                                            ) : (syncSuccess === ds.id || isSynced) ? (
-                                                                <CheckCircle2 className="h-3.5 w-3.5" />
-                                                            ) : (
-                                                                <CloudUpload className="h-3.5 w-3.5" />
-                                                            )}
-                                                        </Button>
-                                                    )}
-                                                    {isSynced && gcpConfig?.projectId && (
-                                                        <a
-                                                            href={`https://console.cloud.google.com/bigquery?p=${gcpConfig.projectId}&d=nimbus_edge&t=${ds.id}&page=table`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="h-8 w-8 flex items-center justify-center text-indigo-400 hover:text-indigo-600 transition-colors"
-                                                            title="View in BigQuery"
-                                                        >
-                                                            <ExternalLink className="h-3 w-3" />
-                                                        </a>
-                                                    )}
+                                                    <a
+                                                        href={`https://console.cloud.google.com/bigquery?p=${process.env.NEXT_PUBLIC_GCP_PROJECT_ID}&d=nimbus_edge&t=${ds.id}&page=table`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="h-8 w-8 flex items-center justify-center text-indigo-400 hover:text-indigo-600 transition-colors"
+                                                        title="View in BigQuery"
+                                                    >
+                                                        <ExternalLink className="h-3 w-3" />
+                                                    </a>
                                                 </div>
 
                                                 {expandedTables[ds.id] && ds.column_json && (
@@ -432,7 +359,7 @@ LIMIT 10`);
                                                             <span className="truncate">{table.id}</span>
                                                         </div>
                                                         <a
-                                                            href={`https://console.cloud.google.com/bigquery?p=${gcpConfig?.projectId}&d=nimbus_edge&t=${table.id}&page=table`}
+                                                            href={`https://console.cloud.google.com/bigquery?p=${process.env.NEXT_PUBLIC_GCP_PROJECT_ID}&d=nimbus_edge&t=${table.id}&page=table`}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             className="text-slate-400 hover:text-indigo-600"

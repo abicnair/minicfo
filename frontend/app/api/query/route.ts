@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'SQL query is required' }, { status: 400 });
         }
 
-        // Fetch User Session and Profile
+        // Fetch User Session
         const cookieStore = await cookies();
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -42,23 +42,17 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('gcp_config')
-            .eq('id', session.user.id)
-            .single();
+        const projectId = process.env.NEXT_PUBLIC_GCP_PROJECT_ID;
 
-        const config = profile?.gcp_config as any;
-
-        if (!config?.projectId || !config?.serviceAccountJson) {
+        if (!projectId) {
             return NextResponse.json({
-                error: 'BigQuery not configured. Please visit Settings to connect your Google Cloud account.'
+                error: 'Global BigQuery not configured.'
             }, { status: 500 });
         }
 
+        // Uses GOOGLE_APPLICATION_CREDENTIALS automatically
         const bq = new BigQuery({
-            projectId: config.projectId,
-            credentials: config.serviceAccountJson,
+            projectId: projectId,
         });
 
         // Run the query

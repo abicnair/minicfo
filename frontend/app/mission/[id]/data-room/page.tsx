@@ -36,8 +36,6 @@ export default function DataRoomPage({ params }: { params: Promise<{ id: string 
     const [loading, setLoading] = useState(true);
     const [selectedDataset, setSelectedDataset] = useState<string | null>(null);
     const [isDownloading, setIsDownloading] = useState<string | null>(null);
-    const [isSyncing, setIsSyncing] = useState<string | null>(null);
-    const [syncSuccess, setSyncSuccess] = useState<string | null>(null);
 
     const syncedDatasets = missionProgress?.synced_datasets ?? [];
     const gcpConfig = profile?.gcp_config;
@@ -111,30 +109,6 @@ export default function DataRoomPage({ params }: { params: Promise<{ id: string 
             console.error('Download error:', err);
         } finally {
             setIsDownloading(null);
-        }
-    };
-
-    const handleSync = async (datasetId: string) => {
-        setIsSyncing(datasetId);
-        setSyncSuccess(null);
-        try {
-            const response = await fetch('/api/sync-bigquery', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tableId: datasetId }), // Dataset ID matches table mapping
-            });
-
-            if (!response.ok) throw new Error('Sync failed');
-
-            // Persist the sync state in Supabase
-            await markDatasetSynced(missionId, datasetId);
-
-            setSyncSuccess(datasetId);
-            setTimeout(() => setSyncSuccess(null), 3000);
-        } catch (err) {
-            console.error('Sync error:', err);
-        } finally {
-            setIsSyncing(null);
         }
     };
 
@@ -253,34 +227,14 @@ export default function DataRoomPage({ params }: { params: Promise<{ id: string 
                                                             Download CSV
                                                         </Button>
                                                         <div className="flex items-center gap-2">
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                className={cn(
-                                                                    "h-8 gap-2 text-xs border-amber-200 text-amber-700 hover:bg-amber-50",
-                                                                    (syncSuccess === dataset.id || syncedDatasets.includes(dataset.id)) && "bg-green-50 text-green-700 border-green-200"
-                                                                )}
-                                                                onClick={() => handleSync(dataset.id)}
-                                                                disabled={isSyncing === dataset.id}
+                                                            <a
+                                                                href={`https://console.cloud.google.com/bigquery?p=${process.env.NEXT_PUBLIC_GCP_PROJECT_ID}&d=nimbus_edge&t=${dataset.id}&page=table`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-[10px] text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-medium bg-white px-2 py-1 rounded border border-indigo-100 hover:border-indigo-300 transition-colors"
                                                             >
-                                                                {isSyncing === dataset.id ? (
-                                                                    <div className="h-3 w-3 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-                                                                ) : (syncSuccess === dataset.id || syncedDatasets.includes(dataset.id)) ? (
-                                                                    <CheckCircle2 className="h-3 w-3" />
-                                                                ) : <CloudUpload className="h-3 w-3" />}
-                                                                {(syncSuccess === dataset.id || syncedDatasets.includes(dataset.id)) ? 'Synced' : 'Load to BigQuery'}
-                                                            </Button>
-
-                                                            {(syncSuccess === dataset.id || syncedDatasets.includes(dataset.id)) && gcpConfig?.projectId && (
-                                                                <a
-                                                                    href={`https://console.cloud.google.com/bigquery?p=${gcpConfig.projectId}&d=nimbus_edge&t=${dataset.id}&page=table`}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="text-[10px] text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-medium bg-white px-2 py-1 rounded border border-indigo-100 hover:border-indigo-300 transition-colors"
-                                                                >
-                                                                    View in BQ <ExternalLink className="h-3 w-3" />
-                                                                </a>
-                                                            )}
+                                                                View in BQ <ExternalLink className="h-3 w-3" />
+                                                            </a>
                                                         </div>
                                                     </div>
                                                 </div>
