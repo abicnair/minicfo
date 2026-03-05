@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BigQuery } from '@google-cloud/bigquery';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { createBigQueryClient } from '@/lib/bigquery';
 
 export async function POST(req: NextRequest) {
     try {
@@ -42,18 +42,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const projectId = process.env.NEXT_PUBLIC_GCP_PROJECT_ID;
-
-        if (!projectId) {
-            return NextResponse.json({
-                error: 'Global BigQuery not configured.'
-            }, { status: 500 });
-        }
-
-        // Uses GOOGLE_APPLICATION_CREDENTIALS automatically
-        const bq = new BigQuery({
-            projectId: projectId,
-        });
+        const bq = createBigQueryClient();
 
         // Run the query
         const options = {
