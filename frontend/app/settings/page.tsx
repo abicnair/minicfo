@@ -176,7 +176,6 @@ export default function SettingsPage() {
                                                                 .eq('id', user.id)
                                                                 .select();
                                                             if (error) throw error;
-                                                            if (!data || data.length === 0) throw new Error('Update failed.');
                                                             setSaveStatus('success');
                                                         } catch (err: any) {
                                                             setSaveStatus('error');

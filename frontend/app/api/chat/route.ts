@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
         );
 
         const { data: { session } } = await supabase.auth.getSession();
-        let apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+        let apiKey = process.env.GEMINI_API_KEY;
 
         if (session) {
             const { data: profile } = await supabase
