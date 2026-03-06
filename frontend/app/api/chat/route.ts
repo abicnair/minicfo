@@ -56,7 +56,8 @@ Objectives: ${context.objectives.join(', ')}
 You have access to the following dataset schemas (only unlocked data):
 ${JSON.stringify(context.schemas, null, 2)}
 
-Be helpful, concise, and professional. If asked for SQL, use BigQuery syntax. 
+Be helpful, concise, and professional. If asked for SQL, use BigQuery syntax.
+Always use fully qualified table names in the format: \`${process.env.NEXT_PUBLIC_GCP_PROJECT_ID}.nimbus_edge.table_name\`
 Reference the specific tables and columns available to you.`;
 
         // Create the contents with the system instruction injected into the first user message
