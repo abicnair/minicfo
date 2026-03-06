@@ -168,7 +168,7 @@ LIMIT 10`);
                 // Improve error message for common issues
                 let msg = data.error || 'Failed to execute query';
                 if (msg.includes('Not found: Table')) {
-                    msg = `Table not found in BigQuery. Have you clicked 'Sync to BQ' for this dataset yet?\n\nError: ${msg}`;
+                    msg = `Table not found in BigQuery. Please check the table name is correct.\n\nError: ${msg}`;
                 }
                 setError(msg);
             } else {
@@ -203,7 +203,8 @@ LIMIT 10`);
                         briefing: missionBriefing,
                         objectives: missionObjectives,
                         schemas: unlockedDatasets.map(d => ({
-                            name: d.name,
+                            tableId: d.id,
+                            displayName: d.name,
                             columns: d.column_json
                         }))
                     }

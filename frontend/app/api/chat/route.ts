@@ -57,8 +57,9 @@ You have access to the following dataset schemas (only unlocked data):
 ${JSON.stringify(context.schemas, null, 2)}
 
 Be helpful, concise, and professional. If asked for SQL, use BigQuery syntax.
-Always use fully qualified table names in the format: \`${process.env.NEXT_PUBLIC_GCP_PROJECT_ID}.nimbus_edge.table_name\`
-Reference the specific tables and columns available to you.`;
+Always use fully qualified table names using the tableId field (not displayName) in the format: \`${process.env.NEXT_PUBLIC_GCP_PROJECT_ID}.nimbus_edge.tableId\`
+For example, if tableId is "bookings", use \`${process.env.NEXT_PUBLIC_GCP_PROJECT_ID}.nimbus_edge.bookings\`.
+Never invent table names — only use the tableId values from the schemas provided.`;
 
         // Create the contents with the system instruction injected into the first user message
         const contents = history.length === 0
