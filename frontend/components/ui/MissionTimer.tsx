@@ -20,8 +20,8 @@ export function MissionTimer({ kickoffAt, className, onTimeExpire }: MissionTime
             return;
         }
 
-        // Fixed expiry date: March 16, 2026, end of day UTC
-        const expiryDate = new Date('2026-03-16T23:59:59Z');
+        // Fixed expiry date: March 24, 2026, end of day UTC
+        const expiryDate = new Date('2026-03-24T23:59:59Z');
 
         const calculateTimeLeft = () => {
             const now = new Date();
