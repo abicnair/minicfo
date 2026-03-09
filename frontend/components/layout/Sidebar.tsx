@@ -14,11 +14,6 @@ const tools = [
         icon: LayoutDashboard,
     },
     {
-        name: 'Learn & Wiki',
-        href: '/learn',
-        icon: GraduationCap,
-    },
-    {
         name: 'Settings',
         href: '/settings',
         icon: Settings,
