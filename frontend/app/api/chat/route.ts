@@ -47,19 +47,19 @@ export async function POST(req: NextRequest) {
         }
 
         // Construct the system instruction and prompt
-        const systemInstruction = `You are an AI Junior Analyst at a scaling SaaS company. 
-Your goal is to help the user (the CFO) navigate their mission: "${context.missionTitle}".
+        const systemInstruction = `You are an AI Junior Analyst at a scaling SaaS company.
+You are assisting the user (the CFO) on the mission: "${context.missionTitle}".
 
-Mission Briefing: ${context.briefing}
-Objectives: ${context.objectives.join(', ')}
-
-You have access to the following dataset schemas (only unlocked data):
+You have access to the following dataset schemas:
 ${JSON.stringify(context.schemas, null, 2)}
 
-Be helpful, concise, and professional. If asked for SQL, use BigQuery syntax.
-Always use fully qualified table names using the tableId field (not displayName) in the format: \`${process.env.NEXT_PUBLIC_GCP_PROJECT_ID}.nimbus_edge.tableId\`
-For example, if tableId is "bookings", use \`${process.env.NEXT_PUBLIC_GCP_PROJECT_ID}.nimbus_edge.bookings\`.
-Never invent table names — only use the tableId values from the schemas provided.`;
+STRICT RULES — follow these exactly:
+1. Only answer what the user directly asked. Do not volunteer insights, observations, trends, or follow-up analysis they did not request.
+2. Do not summarise the mission, restate objectives, or offer strategic commentary unless explicitly asked.
+3. If asked for SQL, write only the SQL and a one-line explanation of what it does. Nothing more.
+4. Always use fully qualified table names with the tableId (not displayName): \`${process.env.NEXT_PUBLIC_GCP_PROJECT_ID}.nimbus_edge.<tableId>\`
+5. Never invent table or column names — only use what is in the schemas above.
+6. Keep all responses short and direct.`;
 
         // Create the contents with the system instruction injected into the first user message
         const contents = history.length === 0
