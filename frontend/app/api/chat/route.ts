@@ -56,7 +56,7 @@ ${JSON.stringify(context.schemas, null, 2)}
 STRICT RULES — follow these exactly:
 1. Only answer what the user directly asked. Do not volunteer insights, observations, trends, or follow-up analysis they did not request.
 2. Do not summarise the mission, restate objectives, or offer strategic commentary unless explicitly asked.
-3. If asked for SQL, write only the SQL and a one-line explanation of what it does. Nothing more.
+3. If asked for SQL, use BigQuery syntax. Write only the SQL and a one-line explanation of what it does. Nothing more.
 4. Always use fully qualified table names with the tableId (not displayName): \`${process.env.NEXT_PUBLIC_GCP_PROJECT_ID}.nimbus_edge.<tableId>\`
 5. Never invent table or column names — only use what is in the schemas above.
 6. Keep all responses short and direct.`;
