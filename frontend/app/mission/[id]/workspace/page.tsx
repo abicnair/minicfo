@@ -80,7 +80,29 @@ LIMIT 10`);
     const [bqTables, setBqTables] = useState<any[]>([]);
     const [bqLoading, setBqLoading] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [aiPanelWidth, setAiPanelWidth] = useState(320);
+    const isResizing = React.useRef(false);
     const scrollRef = React.useRef<HTMLDivElement>(null);
+    const containerRef = React.useRef<HTMLDivElement>(null);
+
+    const handleResizeMouseDown = (e: React.MouseEvent) => {
+        isResizing.current = true;
+        e.preventDefault();
+        const onMouseMove = (e: MouseEvent) => {
+            if (!isResizing.current || !containerRef.current) return;
+            const containerRect = containerRef.current.getBoundingClientRect();
+            const minWidth = containerRect.width * 0.25;
+            const newWidth = Math.max(minWidth, containerRect.right - e.clientX);
+            setAiPanelWidth(Math.min(newWidth, containerRect.width * 0.6));
+        };
+        const onMouseUp = () => {
+            isResizing.current = false;
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        };
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+    };
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -257,7 +279,7 @@ LIMIT 10`);
             </header>
 
             {/* Main Content - Split Pane */}
-            <div className="flex flex-1 overflow-hidden">
+            <div ref={containerRef} className="flex flex-1 overflow-hidden">
 
                 {/* Left Pane: Schema / Assets */}
                 <aside className="w-80 border-r border-slate-200 bg-slate-50 flex flex-col overflow-hidden">
@@ -311,15 +333,6 @@ LIMIT 10`);
                                                             {expandedTables[ds.id] ? '−' : '+'}
                                                         </span>
                                                     </button>
-                                                    <a
-                                                        href={`https://console.cloud.google.com/bigquery?p=${process.env.NEXT_PUBLIC_GCP_PROJECT_ID}&d=nimbus_edge&t=${ds.id}&page=table`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="h-8 w-8 flex items-center justify-center text-indigo-400 hover:text-indigo-600 transition-colors"
-                                                        title="View in BigQuery"
-                                                    >
-                                                        <ExternalLink className="h-3 w-3" />
-                                                    </a>
                                                 </div>
 
                                                 {expandedTables[ds.id] && ds.column_json && (
@@ -357,14 +370,6 @@ LIMIT 10`);
                                                             <Table className="h-3.5 w-3.5 text-slate-400" />
                                                             <span className="truncate">{table.id}</span>
                                                         </div>
-                                                        <a
-                                                            href={`https://console.cloud.google.com/bigquery?p=${process.env.NEXT_PUBLIC_GCP_PROJECT_ID}&d=nimbus_edge&t=${table.id}&page=table`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-slate-400 hover:text-indigo-600"
-                                                        >
-                                                            <ExternalLink className="h-3 w-3" />
-                                                        </a>
                                                     </div>
                                                 </div>
                                             ))}
@@ -403,7 +408,7 @@ LIMIT 10`);
                                             runQuery();
                                         }
                                     }}
-                                    className="flex-1 w-full p-4 font-mono text-sm resize-none focus:outline-none"
+                                    className="flex-1 w-full p-4 font-mono text-sm text-slate-900 resize-none focus:outline-none"
                                     spellCheck={false}
                                     placeholder="Enter your SQL query here..."
                                 />
@@ -478,8 +483,15 @@ LIMIT 10`);
                     </div>
                 </section>
 
+                {/* Resize Handle */}
+                <div
+                    onMouseDown={handleResizeMouseDown}
+                    className="w-1 cursor-col-resize bg-slate-200 hover:bg-indigo-400 transition-colors shrink-0"
+                    title="Drag to resize"
+                />
+
                 {/* Right Pane: AI Copilot */}
-                <aside className="w-80 border-l border-slate-200 bg-white flex flex-col">
+                <aside style={{ width: aiPanelWidth }} className="border-l border-slate-200 bg-white flex flex-col shrink-0 overflow-hidden">
                     <div className="p-4 border-b border-slate-200 bg-indigo-50/50">
                         <h2 className="font-semibold text-indigo-900 flex items-center gap-2">
                             <MessageSquare className="h-4 w-4" /> AI Junior Analyst

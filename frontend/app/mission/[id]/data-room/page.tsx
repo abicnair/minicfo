@@ -226,16 +226,6 @@ export default function DataRoomPage({ params }: { params: Promise<{ id: string 
                                                             ) : <Download className="h-3 w-3" />}
                                                             Download CSV
                                                         </Button>
-                                                        <div className="flex items-center gap-2">
-                                                            <a
-                                                                href={`https://console.cloud.google.com/bigquery?p=${process.env.NEXT_PUBLIC_GCP_PROJECT_ID}&d=nimbus_edge&t=${dataset.id}&page=table`}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="text-[10px] text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-medium bg-white px-2 py-1 rounded border border-indigo-100 hover:border-indigo-300 transition-colors"
-                                                            >
-                                                                View in BQ <ExternalLink className="h-3 w-3" />
-                                                            </a>
-                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>

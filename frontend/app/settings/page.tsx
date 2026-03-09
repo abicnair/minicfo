@@ -195,8 +195,8 @@ export default function SettingsPage() {
                                         </div>
                                     </div>
 
-                                    {/* Step 2: Billing */}
-                                    <div className="p-8 space-y-6 bg-amber-50/10 border-t border-amber-100">
+                                    {/* Step 2: Billing — hidden for now */}
+                                    <div className="hidden p-8 space-y-6 bg-amber-50/10 border-t border-amber-100">
                                         <div className="flex items-center gap-3">
                                             <span className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-600 text-white font-bold text-lg shadow-inner">2</span>
                                             <h3 className="text-xl font-bold text-slate-900">Required: Set Up High-Quota Billing</h3>
