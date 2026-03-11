@@ -43,7 +43,13 @@ export async function POST(req: NextRequest) {
         const bq = createBigQueryClient();
         const projectId = process.env.NEXT_PUBLIC_GCP_PROJECT_ID;
 
-        const query = `SELECT * FROM \`${projectId}.nimbus_edge.${datasetId}\` LIMIT 10000`;
+        // Map Supabase dataset IDs to BigQuery table names where they differ
+        const tableIdMap: Record<string, string> = {
+            'sku_pricing': 'sku_pricing_cost',
+        };
+        const bqTableId = tableIdMap[datasetId] ?? datasetId;
+
+        const query = `SELECT * FROM \`${projectId}.nimbus_edge.${bqTableId}\` LIMIT 10000`;
         const [rows] = await bq.query({ query, location: 'US' });
 
         if (!rows || rows.length === 0) {
