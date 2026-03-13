@@ -343,7 +343,7 @@ LIMIT 10`);
                                                 {expandedTables[ds.id] && ds.column_json && (
                                                     <div className="ml-4 pl-3 border-l-2 border-slate-200 py-1 space-y-1">
                                                         <div className="text-[9px] text-slate-400 uppercase font-bold mb-1 tracking-tight">
-                                                            bigquery: `nimbus_edge.{ds.id}`
+                                                            bigquery: `nimbus_edge.{BQ_TABLE_ID_MAP[ds.id] ?? ds.id}`
                                                         </div>
                                                         {ds.column_json.map((col: any) => (
                                                             <div key={col.name} className="flex flex-col py-1">
