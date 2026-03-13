@@ -48,6 +48,11 @@ const ChatMessage = ({ content, role }: { content: string, role: 'ai' | 'user' }
     );
 };
 
+// Maps Supabase dataset IDs to their actual BigQuery table names where they differ
+const BQ_TABLE_ID_MAP: Record<string, string> = {
+    'sku_pricing': 'sku_pricing_cost',
+};
+
 export default function SimulationPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: missionId } = React.use(params);
     const { userMissions, markDatasetSynced, profile } = useAuth();
@@ -225,7 +230,7 @@ LIMIT 10`);
                         briefing: missionBriefing,
                         objectives: missionObjectives,
                         schemas: unlockedDatasets.map(d => ({
-                            tableId: d.id,
+                            tableId: BQ_TABLE_ID_MAP[d.id] ?? d.id,
                             displayName: d.name,
                             columns: d.column_json
                         }))
