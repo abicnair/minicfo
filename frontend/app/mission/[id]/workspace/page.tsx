@@ -363,12 +363,12 @@ LIMIT 10`);
                                     })}
 
                                     {/* Additional tables in BQ that are NOT in unlockedDatasets */}
-                                    {bqTables.filter(t => !unlockedDatasets.some(ds => ds.id === t.id)).length > 0 && (
+                                    {bqTables.filter(t => !unlockedDatasets.some(ds => (BQ_TABLE_ID_MAP[ds.id] ?? ds.id) === t.id)).length > 0 && (
                                         <div className="mt-4 space-y-2">
                                             <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                                 Additional Tables
                                             </div>
-                                            {bqTables.filter(t => !unlockedDatasets.some(ds => ds.id === t.id)).map(table => (
+                                            {bqTables.filter(t => !unlockedDatasets.some(ds => (BQ_TABLE_ID_MAP[ds.id] ?? ds.id) === t.id)).map(table => (
                                                 <div key={table.id} className="px-2">
                                                     <div className="flex items-center justify-between p-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 border border-slate-200">
                                                         <div className="flex items-center gap-2">
